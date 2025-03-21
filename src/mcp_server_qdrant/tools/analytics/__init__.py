@@ -1,9 +1,10 @@
 """
-Analytics tools for Qdrant MCP server.
-This package contains tools for analyzing Qdrant collections and performance.
+Analytics tools for Qdrant collections.
 """
 
+# Import tools from this package
 from .analyze_collection import analyze_collection
-from .benchmark_query import benchmark_query
+from .semantic_clustering import semantic_clustering
+from .extract_cluster_topics import extract_cluster_topics
 
-__all__ = ["analyze_collection", "benchmark_query"]
+__all__ = ["analyze_collection", "semantic_clustering", "extract_cluster_topics"]

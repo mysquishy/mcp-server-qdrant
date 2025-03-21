@@ -952,6 +952,9 @@ from mcp_server_qdrant.tools.visualization.visualize_vectors import visualize_ve
 from mcp_server_qdrant.tools.visualization.cluster_visualization import cluster_visualization
 from mcp_server_qdrant.tools.versioning.version_document import version_document, VersionDocumentInput
 from mcp_server_qdrant.tools.versioning.get_document_history import get_document_history, GetDocumentHistoryInput
+# Import the semantic clustering tools
+from mcp_server_qdrant.tools.analytics.semantic_clustering import semantic_clustering
+from mcp_server_qdrant.tools.analytics.extract_cluster_topics import extract_cluster_topics
 
 # Register the metadata extraction tool
 @fast_mcp.tool(name="extract_metadata")
@@ -1011,6 +1014,18 @@ async def get_document_history_wrapper(ctx: Context, collection: str, document_i
     
     # Call the document history function
     return await get_document_history(client, input_data)
+
+# Register the semantic clustering tool
+@fast_mcp.tool(name="semantic_clustering")
+async def semantic_clustering_wrapper(ctx: Context, collection: str, method: str = "hdbscan", n_clusters: Optional[int] = None, min_cluster_size: int = 5, filter: Optional[Dict] = None, limit: int = 5000, include_vectors: bool = True, dimensionality_reduction: bool = True, n_components: int = 2, random_state: int = 42):
+    """Perform clustering on documents in a collection"""
+    return await semantic_clustering(ctx, collection, method, n_clusters, min_cluster_size, filter, limit, include_vectors, dimensionality_reduction, n_components, random_state)
+
+# Register the extract cluster topics tool
+@fast_mcp.tool(name="extract_cluster_topics")
+async def extract_cluster_topics_wrapper(ctx: Context, collection: str, cluster_ids: List[int], document_ids: List[str], text_field: str = "text", n_topics_per_cluster: int = 3, n_terms_per_topic: int = 5, method: str = "tfidf", filter_stopwords: bool = True, min_df: int = 2, custom_stopwords: Optional[List[str]] = None):
+    """Extract topics from document clusters"""
+    return await extract_cluster_topics(ctx, collection, cluster_ids, document_ids, text_field, n_topics_per_cluster, n_terms_per_topic, method, filter_stopwords, min_df, custom_stopwords)
 
 # Main function to run the server
 if __name__ == "__main__":

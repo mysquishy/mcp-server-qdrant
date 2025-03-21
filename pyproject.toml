@@ -16,6 +16,44 @@ dependencies = [
     "python-dotenv>=1.0.0",
 ]
 
+[project.optional-dependencies]
+analytics = [
+    "scikit-learn>=1.0.2",
+    "hdbscan>=0.8.29",
+    "umap-learn>=0.5.3",
+    "nltk>=3.7",
+]
+visualization = [
+    "plotly>=5.10.0",
+    "scikit-learn>=1.0.2",
+    "umap-learn>=0.5.3",
+]
+multilingual = [
+    "langdetect>=1.0.9",
+    "deep-translator>=1.10.0",
+]
+connectors = [
+    "feedparser>=6.0.0",
+]
+web = [
+    "httpx>=0.23.0",
+    "beautifulsoup4>=4.10.0",
+    "lxml>=4.9.0",
+]
+all = [
+    "scikit-learn>=1.0.2",
+    "hdbscan>=0.8.29",
+    "umap-learn>=0.5.3",
+    "nltk>=3.7",
+    "plotly>=5.10.0",
+    "langdetect>=1.0.9",
+    "deep-translator>=1.10.0",
+    "feedparser>=6.0.0",
+    "httpx>=0.23.0",
+    "beautifulsoup4>=4.10.0",
+    "lxml>=4.9.0",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
