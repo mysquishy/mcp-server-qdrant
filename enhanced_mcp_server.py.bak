@@ -7,9 +7,9 @@ import asyncio
 import sys
 import time
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Dict, Any, List, Optional, Union, Tuple
+from typing import AsyncIterator, Dict, Any, List, Optional, Union
 
-from mcp.server.fastmcp import FastMCP, Context, Image
+from mcp.server.fastmcp import FastMCP, Context
 from mcp_server_qdrant.embeddings.factory import create_embedding_provider
 from mcp_server_qdrant.qdrant import QdrantConnector, Entry
 from qdrant_client import models
@@ -64,14 +64,6 @@ async def remember(ctx: Context, information: str) -> str:
     
     # Get Qdrant connector from context
     qdrant_connector = ctx.request_context.lifespan_context["qdrant_connector"]
-    
-    # Make client directly available in the context for the visualization tools
-    # This is needed by the visualization tools
-    ctx.request_context.lifespan_context["qdrant_client"] = qdrant_connector._client
-    ctx.request_context.lifespan_context["settings"] = {
-        "qdrant_url": QDRANT_URL,
-        "qdrant_api_key": None
-    }
     
     # Store the information
     await qdrant_connector.store_memory(information)
@@ -945,72 +937,6 @@ async def delete_collection(ctx: Context, name: str, confirm: bool = False) -> D
             "status": "error",
             "message": f"Error deleting collection: {str(e)}"
         }
-
-# Import the new tools
-from mcp_server_qdrant.tools.metadata.extract_metadata import extract_metadata
-from mcp_server_qdrant.tools.visualization.visualize_vectors import visualize_vectors
-from mcp_server_qdrant.tools.visualization.cluster_visualization import cluster_visualization
-from mcp_server_qdrant.tools.versioning.version_document import version_document, VersionDocumentInput
-from mcp_server_qdrant.tools.versioning.get_document_history import get_document_history, GetDocumentHistoryInput
-
-# Register the metadata extraction tool
-@fast_mcp.tool(name="extract_metadata")
-async def extract_metadata_wrapper(ctx: Context, text: str, extract_entities: bool = True, extract_patterns: bool = True, extract_statistics: bool = True, custom_patterns: Optional[Dict[str, str]] = None):
-    """Automatically extract structured metadata from documents"""
-    return await extract_metadata(ctx, text, extract_entities, extract_patterns, extract_statistics, custom_patterns)
-
-# Register the vector visualization tool
-@fast_mcp.tool(name="visualize_vectors")
-async def visualize_vectors_wrapper(ctx: Context, collection: str, label_field: Optional[str] = "text", limit: int = 1000, method: str = "umap", dimensions: int = 2, filter: Optional[Dict[str, Any]] = None, category_field: Optional[str] = None, custom_colors: Optional[Dict[str, str]] = None, width: int = 800, height: int = 600, title: str = "Vector Visualization"):
-    """Generate 2D/3D projections of vectors for visualization"""
-    return await visualize_vectors(ctx, collection, label_field, limit, method, dimensions, filter, category_field, custom_colors, width, height, title)
-
-# Register the cluster visualization tool
-@fast_mcp.tool(name="cluster_visualization")
-async def cluster_visualization_wrapper(ctx: Context, collection: str, n_clusters: Optional[int] = None, text_field: str = "text", method: str = "hdbscan", min_cluster_size: int = 5, limit: int = 5000, filter: Optional[Dict[str, Any]] = None, width: int = 900, height: int = 700, title: str = "Semantic Clusters", label_clusters: bool = True, extract_topics: bool = True, topic_n_words: int = 5, include_raw_data: bool = False):
-    """Visualize semantic clusters within collections"""
-    return await cluster_visualization(ctx, collection, n_clusters, text_field, method, min_cluster_size, limit, filter, width, height, title, label_clusters, extract_topics, topic_n_words, include_raw_data)
-
-# Register the document versioning tools
-@fast_mcp.tool(name="version_document")
-async def version_document_wrapper(ctx: Context, collection: str, document_id: str, content: str, metadata: Optional[Dict[str, Any]] = None, model: Optional[str] = None, version_note: Optional[str] = None):
-    """Update a document while maintaining version history"""
-    # Get Qdrant connector and embedding model from context
-    qdrant_connector = ctx.request_context.lifespan_context["qdrant_connector"]
-    client = qdrant_connector._client
-    embedding_model = qdrant_connector._embedding_provider
-    
-    # Create input object
-    input_data = VersionDocumentInput(
-        collection=collection,
-        document_id=document_id,
-        content=content,
-        metadata=metadata,
-        model=model,
-        version_note=version_note
-    )
-    
-    # Call the versioning function
-    return await version_document(client, embedding_model, input_data)
-
-@fast_mcp.tool(name="get_document_history")
-async def get_document_history_wrapper(ctx: Context, collection: str, document_id: str, include_content: bool = False, limit: int = 20, offset: int = 0):
-    """Retrieve version history for a document"""
-    # Get Qdrant client from context
-    qdrant_connector = ctx.request_context.lifespan_context["qdrant_connector"]
-    client = qdrant_connector._client
-    
-    # Create input object
-    input_data = GetDocumentHistoryInput(
-        collection=collection,
-        document_id=document_id,
-        include_content=include_content,
-        limit=limit,
-        offset=offset
-    )
-    
-    # Call the document history function
-    return await get_document_history(client, input_data)
 
 # Main function to run the server
 if __name__ == "__main__":
