@@ -53,6 +53,13 @@ from mcp_server_qdrant.tools import (
     # Document processing tools
     index_document,
     process_pdf,
+    
+    # Metadata tools
+    extract_metadata,
+    
+    # Visualization tools
+    visualize_vectors,
+    cluster_visualization,
 )
 
 logger = logging.getLogger(__name__)
@@ -186,6 +193,20 @@ async def index_document_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
 @fast_mcp.tool(name="process-pdf", description=tool_settings.process_pdf_description)
 async def process_pdf_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
     return await process_pdf(ctx, **kwargs)
+
+# Metadata tools
+@fast_mcp.tool(name="extract-metadata", description=tool_settings.extract_metadata_description)
+async def extract_metadata_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await extract_metadata(ctx, **kwargs)
+
+# Visualization tools
+@fast_mcp.tool(name="visualize-vectors", description=tool_settings.visualize_vectors_description)
+async def visualize_vectors_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await visualize_vectors(ctx, **kwargs)
+
+@fast_mcp.tool(name="cluster-visualization", description=tool_settings.cluster_visualization_description)
+async def cluster_visualization_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await cluster_visualization(ctx, **kwargs)
 
 
 @click.command()

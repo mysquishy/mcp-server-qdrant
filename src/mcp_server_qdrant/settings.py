@@ -43,6 +43,13 @@ DEFAULT_TOOL_DESCRIPTIONS = {
     # Document processing tools
     "index_document": "Fetch, process, and index a document from a URL",
     "process_pdf": "Process a PDF file, extract content, and optionally store in Qdrant",
+    
+    # Metadata tools
+    "extract_metadata": "Extract structured metadata from document text including entities, patterns, and statistics",
+    
+    # Visualization tools
+    "visualize_vectors": "Generate 2D or 3D projections of vectors for visualization",
+    "cluster_visualization": "Visualize semantic clusters within collections and extract topics",
 }
 
 
@@ -112,6 +119,22 @@ class ToolSettings(BaseSettings):
     process_pdf_description: str = Field(
         default=DEFAULT_TOOL_DESCRIPTIONS["process_pdf"],
         validation_alias="PROCESS_PDF_DESCRIPTION",
+    )
+    
+    # Metadata tool descriptions
+    extract_metadata_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["extract_metadata"],
+        validation_alias="EXTRACT_METADATA_DESCRIPTION",
+    )
+    
+    # Visualization tool descriptions
+    visualize_vectors_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["visualize_vectors"],
+        validation_alias="VISUALIZE_VECTORS_DESCRIPTION",
+    )
+    cluster_visualization_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["cluster_visualization"],
+        validation_alias="CLUSTER_VISUALIZATION_DESCRIPTION",
     )
 
 

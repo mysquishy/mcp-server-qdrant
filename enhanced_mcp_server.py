@@ -5,6 +5,7 @@ An enhanced MCP server for Qdrant with advanced search tools
 import logging
 import asyncio
 import sys
+import time
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, Dict, Any, List, Optional, Union
 
@@ -320,6 +321,290 @@ async def analyze_collection(
         "payload_fields": list(payload_fields),
         "sample_size": len(sample_entries)
     }
+
+# Data Processing Tools
+
+@fast_mcp.tool(name="batch_embed")
+async def batch_embed_tool(
+    ctx: Context,
+    texts: List[str],
+    model: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Generate embeddings for multiple texts in batch.
+    
+    Args:
+        texts: List of texts to embed
+        model: Model to use for embedding (optional)
+    
+    Returns:
+        Dictionary containing the generated embeddings
+    """
+    if not texts:
+        return {"status": "error", "message": "No texts provided", "embeddings": [], "count": 0}
+        
+    await ctx.debug(f"Generating embeddings for {len(texts)} texts")
+    
+    # Get the embedding provider from context
+    qdrant_connector = ctx.request_context.lifespan_context["qdrant_connector"]
+    embedding_provider = qdrant_connector._embedding_provider
+    
+    try:
+        total = len(texts)
+        await ctx.info(f"Generating embeddings for {total} texts")
+        
+        # Process in batches for efficiency
+        batch_size = 32  # Optimal batch size for most embedding providers
+        batches = [texts[i:i + batch_size] for i in range(0, len(texts), batch_size)]
+        
+        all_embeddings = []
+        processed = 0
+        
+        for i, batch in enumerate(batches):
+            await ctx.info(f"Processing batch {i+1}/{len(batches)}")
+            await ctx.report_progress(processed, total)
+            
+            # Generate embeddings for the batch
+            batch_embeddings = await embedding_provider.embed_documents(batch)
+            all_embeddings.extend(batch_embeddings)
+            
+            processed += len(batch)
+            await ctx.debug(f"Completed batch {i+1}/{len(batches)}, {processed}/{total} texts")
+        
+        await ctx.report_progress(total, total)
+        await ctx.info(f"Completed embedding generation for {total} texts")
+        
+        # Get vector details for the response
+        vector_name = embedding_provider.get_vector_name()
+        dimensions = len(all_embeddings[0]) if all_embeddings else 0
+        
+        return {
+            "status": "success",
+            "embeddings": all_embeddings,
+            "count": len(all_embeddings),
+            "vector_name": vector_name,
+            "dimensions": dimensions
+        }
+    except Exception as e:
+        error_msg = f"Error generating embeddings: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        await ctx.debug(error_msg)
+        
+        return {
+            "status": "error",
+            "message": f"Failed to generate embeddings: {str(e)}",
+            "embeddings": [],
+            "count": 0
+        }
+
+@fast_mcp.tool(name="chunk_and_process")
+async def chunk_and_process_tool(
+    ctx: Context,
+    text: str,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+    collection: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Split text into chunks, generate embeddings, and optionally store in Qdrant.
+    
+    Args:
+        text: Text to process and chunk
+        chunk_size: Maximum size of each chunk (default: 1000)
+        chunk_overlap: Overlap between consecutive chunks (default: 200)
+        collection: Collection to store chunks in (if provided)
+        metadata: Additional metadata to include with each chunk
+    
+    Returns:
+        Processed chunks with embeddings
+    """
+    if not text:
+        return {"status": "error", "message": "No text provided", "chunks": [], "count": 0}
+    
+    # Validate parameters
+    if chunk_size <= 0:
+        return {"status": "error", "message": "Chunk size must be positive", "chunks": [], "count": 0}
+    if chunk_overlap < 0:
+        return {"status": "error", "message": "Chunk overlap must be non-negative", "chunks": [], "count": 0}
+    if chunk_overlap >= chunk_size:
+        return {"status": "error", "message": "Chunk overlap must be less than chunk size", "chunks": [], "count": 0}
+    
+    await ctx.debug(f"Processing text with chunk size {chunk_size}, overlap {chunk_overlap}")
+    
+    # Get dependencies from context
+    qdrant_connector = ctx.request_context.lifespan_context["qdrant_connector"]
+    embedding_provider = qdrant_connector._embedding_provider
+    client = qdrant_connector._client
+    
+    # Create metadata dict if not provided
+    if metadata is None:
+        metadata = {}
+    
+    # Add timestamp to metadata
+    metadata["processed_at"] = time.time()
+    
+    try:
+        # Helper function to split text into chunks
+        def text_to_chunks(text, chunk_size, chunk_overlap):
+            if not text:
+                return []
+            
+            # Simple splitting by character count
+            chunks = []
+            start = 0
+            while start < len(text):
+                end = min(start + chunk_size, len(text))
+                
+                # Try to find a natural breakpoint (sentence or paragraph end)
+                if end < len(text):
+                    # Look for paragraph break
+                    paragraph_end = text.rfind('\n\n', start, end)
+                    if paragraph_end != -1 and paragraph_end > start + chunk_size // 2:
+                        end = paragraph_end + 2
+                    else:
+                        # Look for sentence end
+                        sentence_end = max(
+                            text.rfind('. ', start, end),
+                            text.rfind('! ', start, end),
+                            text.rfind('? ', start, end)
+                        )
+                        if sentence_end != -1 and sentence_end > start + chunk_size // 2:
+                            end = sentence_end + 2
+                
+                chunks.append(text[start:end])
+                start = end - chunk_overlap
+            
+            return chunks
+        
+        # Step 1: Split text into chunks
+        await ctx.info(f"Splitting text into chunks (size: {chunk_size}, overlap: {chunk_overlap})")
+        chunks = text_to_chunks(text, chunk_size, chunk_overlap)
+        total_chunks = len(chunks)
+        
+        if total_chunks == 0:
+            return {"status": "error", "message": "No chunks generated", "chunks": [], "count": 0}
+        
+        await ctx.info(f"Generated {total_chunks} chunks from input text")
+        
+        # Step 2: Generate embeddings for all chunks
+        await ctx.info(f"Generating embeddings for {total_chunks} chunks")
+        
+        # Process chunks in batches
+        processed_chunks = []
+        vector_name = embedding_provider.get_vector_name()
+        
+        # Generate batch of embeddings
+        chunk_embeddings = await embedding_provider.embed_documents(chunks)
+        
+        # Step 3: Process each chunk with its embedding
+        for i, (chunk, embedding) in enumerate(zip(chunks, chunk_embeddings)):
+            await ctx.report_progress(i, total_chunks)
+            
+            # Create unique ID for the chunk
+            import uuid
+            chunk_id = str(uuid.uuid4())
+            
+            # Create chunk metadata
+            chunk_metadata = {
+                "chunk_index": i,
+                "total_chunks": total_chunks,
+                "created_at": time.time(),
+                "chunk_size": len(chunk),
+                **metadata  # Add user-provided metadata
+            }
+            
+            # Create point
+            point = {
+                "id": chunk_id,
+                "vector": embedding,
+                "payload": {
+                    "text": chunk,
+                    **chunk_metadata
+                }
+            }
+            processed_chunks.append(point)
+        
+        # Step 4: Upload to collection if specified
+        if collection and processed_chunks:
+            try:
+                # Check if collection exists, create if not
+                collection_exists = await client.collection_exists(collection)
+                if not collection_exists:
+                    await ctx.info(f"Creating collection '{collection}'")
+                    # Get vector size from the first embedding
+                    vector_size = len(chunk_embeddings[0])
+                    await client.create_collection(
+                        collection_name=collection,
+                        vectors_config={
+                            vector_name: models.VectorParams(
+                                size=vector_size,
+                                distance=models.Distance.COSINE
+                            )
+                        }
+                    )
+                
+                # Prepare points for upload
+                points_to_upload = []
+                for point in processed_chunks:
+                    points_to_upload.append(
+                        models.PointStruct(
+                            id=point["id"],
+                            vector={vector_name: point["vector"]},
+                            payload=point["payload"]
+                        )
+                    )
+                
+                # Upload in batches of 100
+                upload_batch_size = 100
+                for i in range(0, len(points_to_upload), upload_batch_size):
+                    batch = points_to_upload[i:i + upload_batch_size]
+                    await client.upsert(
+                        collection_name=collection,
+                        points=batch
+                    )
+                    await ctx.debug(f"Uploaded batch {i//upload_batch_size + 1}/{(len(points_to_upload) + upload_batch_size - 1)//upload_batch_size}")
+                
+                await ctx.info(f"Successfully uploaded {len(processed_chunks)} chunks to collection '{collection}'")
+            except Exception as e:
+                error_msg = f"Error uploading to collection: {str(e)}"
+                logger.error(error_msg, exc_info=True)
+                await ctx.debug(error_msg)
+                
+                return {
+                    "status": "error",
+                    "message": error_msg,
+                    "chunks": processed_chunks,
+                    "count": len(processed_chunks)
+                }
+        
+        # Return processed chunks (without the full embeddings to reduce payload size)
+        result_chunks = []
+        for chunk in processed_chunks:
+            result_chunks.append({
+                "id": chunk["id"],
+                "payload": chunk["payload"],
+                "vector_dimensions": len(chunk["vector"])
+            })
+        
+        return {
+            "status": "success",
+            "chunks": result_chunks,
+            "count": len(result_chunks),
+            "metadata": metadata,
+            "collection": collection
+        }
+    except Exception as e:
+        error_msg = f"Error processing chunks: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        await ctx.debug(error_msg)
+        
+        return {
+            "status": "error",
+            "message": error_msg,
+            "chunks": [],
+            "count": 0
+        }
 
 # Collection Management Tools
 

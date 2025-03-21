@@ -10,6 +10,8 @@ of the Qdrant MCP server:
 - Advanced query tools: Semantic routing and query decomposition
 - Analytics tools: Collection analysis and query benchmarking
 - Document processing tools: Document indexing and PDF processing
+- Metadata tools: Extracting structured metadata from documents
+- Visualization tools: Vector visualization and cluster analysis
 """
 
 # Search tools
@@ -37,6 +39,13 @@ from .analytics.benchmark_query import benchmark_query
 from .document_processing.index_document import index_document
 from .document_processing.process_pdf import process_pdf
 
+# Metadata tools
+from .metadata.extract_metadata import extract_metadata
+
+# Visualization tools
+from .visualization.visualize_vectors import visualize_vectors
+from .visualization.cluster_visualization import cluster_visualization
+
 __all__ = [
     # Search tools
     "natural_language_query",
@@ -62,4 +71,11 @@ __all__ = [
     # Document processing tools
     "index_document",
     "process_pdf",
+    
+    # Metadata tools
+    "extract_metadata",
+    
+    # Visualization tools
+    "visualize_vectors",
+    "cluster_visualization",
 ]
