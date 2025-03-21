@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "qdrant": {
+      "command": "/Users/squishy64/mcp-server-qdrant/.venv/bin/python",
+      "args": [
+        "-m",
+        "mcp_server_qdrant.server"
+      ],
+      "env": {
+        "COLLECTION_NAME": "claude-memories",
+        "QDRANT_URL": "http://localhost:6333",
+        "EMBEDDING_PROVIDER": "fastembed",
+        "EMBEDDING_MODEL": "sentence-transformers/all-MiniLM-L6-v2",
+        "LOG_LEVEL": "DEBUG"
+      }
+    }
+  }
+}
