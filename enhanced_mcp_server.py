@@ -1027,6 +1027,87 @@ async def extract_cluster_topics_wrapper(ctx: Context, collection: str, cluster_
     """Extract topics from document clusters"""
     return await extract_cluster_topics(ctx, collection, cluster_ids, document_ids, text_field, n_topics_per_cluster, n_terms_per_topic, method, filter_stopwords, min_df, custom_stopwords)
 
+# Import web crawling tools
+from mcp_server_qdrant.tools.web.crawl_url import crawl_url as crawl_url_impl
+from mcp_server_qdrant.tools.web.batch_crawl import batch_crawl as batch_crawl_impl
+from mcp_server_qdrant.tools.web.recursive_crawl import recursive_crawl as recursive_crawl_impl
+from mcp_server_qdrant.tools.web.sitemap_extract import sitemap_extract as sitemap_extract_impl
+
+# Import social media connector tools
+from mcp_server_qdrant.tools.connectors import (
+    setup_twitter_connector,
+    check_twitter_updates,
+    list_twitter_connectors,
+    delete_twitter_connector,
+    setup_mastodon_connector,
+    check_mastodon_updates,
+    list_mastodon_connectors,
+    delete_mastodon_connector
+)
+
+# Register web crawling tools
+@fast_mcp.tool(name="crawl_url")
+async def crawl_url_tool(ctx: Context, url: str, collection: Optional[str] = None, extract_metadata: bool = True, extract_links: bool = True, store_in_qdrant: bool = True, remove_html_tags: bool = True, chunk_size: int = 1000, chunk_overlap: int = 200, user_agent: str = "Qdrant MCP Server Web Crawler", timeout: int = 30):
+    """Crawl a single URL and extract its content"""
+    return await crawl_url_impl(url=url, collection=collection, extract_metadata=extract_metadata, extract_links=extract_links, store_in_qdrant=store_in_qdrant, remove_html_tags=remove_html_tags, chunk_size=chunk_size, chunk_overlap=chunk_overlap, user_agent=user_agent, timeout=timeout, ctx=ctx)
+
+@fast_mcp.tool(name="batch_crawl")
+async def batch_crawl_tool(ctx: Context, urls: List[str], collection: Optional[str] = None, extract_metadata: bool = True, extract_links: bool = True, store_in_qdrant: bool = True, remove_html_tags: bool = True, chunk_size: int = 1000, chunk_overlap: int = 200, max_concurrent: int = 5, timeout_per_url: int = 30):
+    """Crawl multiple URLs in parallel and process their content"""
+    return await batch_crawl_impl(urls=urls, collection=collection, extract_metadata=extract_metadata, extract_links=extract_links, store_in_qdrant=store_in_qdrant, remove_html_tags=remove_html_tags, chunk_size=chunk_size, chunk_overlap=chunk_overlap, max_concurrent=max_concurrent, timeout_per_url=timeout_per_url, ctx=ctx)
+
+@fast_mcp.tool(name="recursive_crawl")
+async def recursive_crawl_tool(ctx: Context, start_url: str, max_depth: int = 2, max_pages: int = 20, stay_on_domain: bool = True, collection: Optional[str] = None, exclude_patterns: Optional[List[str]] = None, include_patterns: Optional[List[str]] = None, chunk_size: int = 1000, chunk_overlap: int = 200):
+    """Recursively crawl a website and store content in Qdrant"""
+    return await recursive_crawl_impl(start_url=start_url, max_depth=max_depth, max_pages=max_pages, stay_on_domain=stay_on_domain, collection=collection, exclude_patterns=exclude_patterns, include_patterns=include_patterns, chunk_size=chunk_size, chunk_overlap=chunk_overlap, ctx=ctx)
+
+@fast_mcp.tool(name="sitemap_extract")
+async def sitemap_extract_tool(ctx: Context, url: str, follow_sitemapindex: bool = True, limit: Optional[int] = None, include_lastmod: bool = True, filter_patterns: Optional[List[str]] = None, exclude_patterns: Optional[List[str]] = None, timeout: int = 30):
+    """Extract URLs from a sitemap.xml file"""
+    return await sitemap_extract_impl(url=url, follow_sitemapindex=follow_sitemapindex, limit=limit, include_lastmod=include_lastmod, filter_patterns=filter_patterns, exclude_patterns=exclude_patterns, timeout=timeout, ctx=ctx)
+
+# Register social media connector tools - Twitter
+@fast_mcp.tool(name="setup_twitter_connector")
+async def setup_twitter_connector_tool(ctx: Context, username: str, collection_name: str, include_retweets: bool = True, include_replies: bool = False, fetch_limit: int = 100, bearer_token: Optional[str] = None, update_interval_minutes: int = 30):
+    """Set up a Twitter connector to automatically fetch and index tweets"""
+    return await setup_twitter_connector(username=username, collection_name=collection_name, include_retweets=include_retweets, include_replies=include_replies, fetch_limit=fetch_limit, bearer_token=bearer_token, update_interval_minutes=update_interval_minutes)
+
+@fast_mcp.tool(name="check_twitter_updates")
+async def check_twitter_updates_tool(ctx: Context, connector_id: str):
+    """Manually check for new tweets from a configured Twitter connector"""
+    return await check_twitter_updates(connector_id=connector_id)
+
+@fast_mcp.tool(name="list_twitter_connectors")
+async def list_twitter_connectors_tool(ctx: Context):
+    """List all active Twitter connectors"""
+    return await list_twitter_connectors()
+
+@fast_mcp.tool(name="delete_twitter_connector")
+async def delete_twitter_connector_tool(ctx: Context, connector_id: str):
+    """Delete a Twitter connector"""
+    return await delete_twitter_connector(connector_id=connector_id)
+
+# Register social media connector tools - Mastodon
+@fast_mcp.tool(name="setup_mastodon_connector")
+async def setup_mastodon_connector_tool(ctx: Context, account: str, instance_url: str, collection_name: str, include_boosts: bool = True, include_replies: bool = False, fetch_limit: int = 100, api_access_token: Optional[str] = None, update_interval_minutes: int = 30):
+    """Set up a Mastodon connector to automatically fetch and index posts"""
+    return await setup_mastodon_connector(account=account, instance_url=instance_url, collection_name=collection_name, include_boosts=include_boosts, include_replies=include_replies, fetch_limit=fetch_limit, api_access_token=api_access_token, update_interval_minutes=update_interval_minutes)
+
+@fast_mcp.tool(name="check_mastodon_updates")
+async def check_mastodon_updates_tool(ctx: Context, connector_id: str):
+    """Manually check for new posts from a configured Mastodon connector"""
+    return await check_mastodon_updates(connector_id=connector_id)
+
+@fast_mcp.tool(name="list_mastodon_connectors")
+async def list_mastodon_connectors_tool(ctx: Context):
+    """List all active Mastodon connectors"""
+    return await list_mastodon_connectors()
+
+@fast_mcp.tool(name="delete_mastodon_connector")
+async def delete_mastodon_connector_tool(ctx: Context, connector_id: str):
+    """Delete a Mastodon connector"""
+    return await delete_mastodon_connector(connector_id=connector_id)
+
 # Main function to run the server
 if __name__ == "__main__":
     logger.info("Starting Enhanced Qdrant MCP Server...")

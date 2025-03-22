@@ -60,6 +60,12 @@ from mcp_server_qdrant.tools import (
     # Visualization tools
     visualize_vectors,
     cluster_visualization,
+    
+    # Web crawling tools
+    web,
+    
+    # Social Media Connector tools
+    connectors,
 )
 
 logger = logging.getLogger(__name__)
@@ -207,6 +213,57 @@ async def visualize_vectors_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
 @fast_mcp.tool(name="cluster-visualization", description=tool_settings.cluster_visualization_description)
 async def cluster_visualization_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
     return await cluster_visualization(ctx, **kwargs)
+
+# Web crawling tools
+@fast_mcp.tool(name="crawl-url", description=tool_settings.crawl_url_description)
+async def crawl_url_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await web.crawl_url.crawl_url(ctx=ctx, **kwargs)
+
+@fast_mcp.tool(name="batch-crawl", description=tool_settings.batch_crawl_description)
+async def batch_crawl_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await web.batch_crawl.batch_crawl(ctx=ctx, **kwargs)
+
+@fast_mcp.tool(name="recursive-crawl", description=tool_settings.recursive_crawl_description)
+async def recursive_crawl_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await web.recursive_crawl.recursive_crawl(ctx=ctx, **kwargs)
+
+@fast_mcp.tool(name="sitemap-extract", description=tool_settings.sitemap_extract_description)
+async def sitemap_extract_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await web.sitemap_extract.sitemap_extract(ctx=ctx, **kwargs)
+
+# Social Media Connector tools - Twitter
+@fast_mcp.tool(name="setup-twitter-connector", description=tool_settings.setup_twitter_connector_description)
+async def setup_twitter_connector_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await connectors.setup_twitter_connector(**kwargs)
+
+@fast_mcp.tool(name="check-twitter-updates", description=tool_settings.check_twitter_updates_description)
+async def check_twitter_updates_tool(ctx: Context, connector_id: str) -> Dict[str, Any]:
+    return await connectors.check_twitter_updates(connector_id)
+
+@fast_mcp.tool(name="list-twitter-connectors", description=tool_settings.list_twitter_connectors_description)
+async def list_twitter_connectors_tool(ctx: Context) -> List[Dict[str, Any]]:
+    return await connectors.list_twitter_connectors()
+
+@fast_mcp.tool(name="delete-twitter-connector", description=tool_settings.delete_twitter_connector_description)
+async def delete_twitter_connector_tool(ctx: Context, connector_id: str) -> Dict[str, Any]:
+    return await connectors.delete_twitter_connector(connector_id)
+
+# Social Media Connector tools - Mastodon
+@fast_mcp.tool(name="setup-mastodon-connector", description=tool_settings.setup_mastodon_connector_description)
+async def setup_mastodon_connector_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+    return await connectors.setup_mastodon_connector(**kwargs)
+
+@fast_mcp.tool(name="check-mastodon-updates", description=tool_settings.check_mastodon_updates_description)
+async def check_mastodon_updates_tool(ctx: Context, connector_id: str) -> Dict[str, Any]:
+    return await connectors.check_mastodon_updates(connector_id)
+
+@fast_mcp.tool(name="list-mastodon-connectors", description=tool_settings.list_mastodon_connectors_description)
+async def list_mastodon_connectors_tool(ctx: Context) -> List[Dict[str, Any]]:
+    return await connectors.list_mastodon_connectors()
+
+@fast_mcp.tool(name="delete-mastodon-connector", description=tool_settings.delete_mastodon_connector_description)
+async def delete_mastodon_connector_tool(ctx: Context, connector_id: str) -> Dict[str, Any]:
+    return await connectors.delete_mastodon_connector(connector_id)
 
 
 @click.command()

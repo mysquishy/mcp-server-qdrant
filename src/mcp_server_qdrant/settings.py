@@ -50,6 +50,24 @@ DEFAULT_TOOL_DESCRIPTIONS = {
     # Visualization tools
     "visualize_vectors": "Generate 2D or 3D projections of vectors for visualization",
     "cluster_visualization": "Visualize semantic clusters within collections and extract topics",
+    
+    # Web crawling tools
+    "crawl_url": "Crawl a single URL and store content in Qdrant",
+    "batch_crawl": "Process multiple URLs in batch and store in Qdrant",
+    "recursive_crawl": "Recursively crawl a website and store content in Qdrant",
+    "sitemap_extract": "Extract and process URLs from a sitemap.xml file",
+    
+    # Social Media Connector tools - Twitter
+    "setup_twitter_connector": "Set up a Twitter connector to automatically fetch and index tweets from a specific user",
+    "check_twitter_updates": "Manually check for new tweets from a configured Twitter connector",
+    "list_twitter_connectors": "List all active Twitter connectors",
+    "delete_twitter_connector": "Delete a Twitter connector",
+    
+    # Social Media Connector tools - Mastodon
+    "setup_mastodon_connector": "Set up a Mastodon connector to automatically fetch and index posts from a specific user",
+    "check_mastodon_updates": "Manually check for new posts from a configured Mastodon connector",
+    "list_mastodon_connectors": "List all active Mastodon connectors",
+    "delete_mastodon_connector": "Delete a Mastodon connector"
 }
 
 
@@ -135,6 +153,60 @@ class ToolSettings(BaseSettings):
     cluster_visualization_description: str = Field(
         default=DEFAULT_TOOL_DESCRIPTIONS["cluster_visualization"],
         validation_alias="CLUSTER_VISUALIZATION_DESCRIPTION",
+    )
+    
+    # Web crawling tool descriptions
+    crawl_url_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["crawl_url"],
+        validation_alias="CRAWL_URL_DESCRIPTION",
+    )
+    batch_crawl_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["batch_crawl"],
+        validation_alias="BATCH_CRAWL_DESCRIPTION",
+    )
+    recursive_crawl_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["recursive_crawl"],
+        validation_alias="RECURSIVE_CRAWL_DESCRIPTION",
+    )
+    sitemap_extract_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["sitemap_extract"],
+        validation_alias="SITEMAP_EXTRACT_DESCRIPTION",
+    )
+    
+    # Social Media Connector tool descriptions - Twitter
+    setup_twitter_connector_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["setup_twitter_connector"],
+        validation_alias="SETUP_TWITTER_CONNECTOR_DESCRIPTION",
+    )
+    check_twitter_updates_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["check_twitter_updates"],
+        validation_alias="CHECK_TWITTER_UPDATES_DESCRIPTION",
+    )
+    list_twitter_connectors_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["list_twitter_connectors"],
+        validation_alias="LIST_TWITTER_CONNECTORS_DESCRIPTION",
+    )
+    delete_twitter_connector_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["delete_twitter_connector"],
+        validation_alias="DELETE_TWITTER_CONNECTOR_DESCRIPTION",
+    )
+    
+    # Social Media Connector tool descriptions - Mastodon
+    setup_mastodon_connector_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["setup_mastodon_connector"],
+        validation_alias="SETUP_MASTODON_CONNECTOR_DESCRIPTION",
+    )
+    check_mastodon_updates_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["check_mastodon_updates"],
+        validation_alias="CHECK_MASTODON_UPDATES_DESCRIPTION",
+    )
+    list_mastodon_connectors_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["list_mastodon_connectors"],
+        validation_alias="LIST_MASTODON_CONNECTORS_DESCRIPTION",
+    )
+    delete_mastodon_connector_description: str = Field(
+        default=DEFAULT_TOOL_DESCRIPTIONS["delete_mastodon_connector"],
+        validation_alias="DELETE_MASTODON_CONNECTOR_DESCRIPTION",
     )
 
 

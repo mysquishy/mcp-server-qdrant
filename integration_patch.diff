@@ -1,0 +1,119 @@
+--- a/src/mcp_server_qdrant/settings.py
++++ b/src/mcp_server_qdrant/settings.py
+@@ -39,6 +39,17 @@ DEFAULT_TOOL_DESCRIPTIONS = {
+     # Visualization tools
+     "visualize_vectors": "Generate 2D or 3D projections of vectors for visualization",
+     "cluster_visualization": "Visualize semantic clusters within collections and extract topics",
++    
++    # Social Media Connector tools - Twitter
++    "setup_twitter_connector": "Set up a Twitter connector to automatically fetch and index tweets from a specific user",
++    "check_twitter_updates": "Manually check for new tweets from a configured Twitter connector",
++    "list_twitter_connectors": "List all active Twitter connectors",
++    "delete_twitter_connector": "Delete a Twitter connector",
++    
++    # Social Media Connector tools - Mastodon
++    "setup_mastodon_connector": "Set up a Mastodon connector to automatically fetch and index posts from a specific user",
++    "check_mastodon_updates": "Manually check for new posts from a configured Mastodon connector",
++    "list_mastodon_connectors": "List all active Mastodon connectors",
++    "delete_mastodon_connector": "Delete a Mastodon connector",
+ }
+ 
+ 
+@@ -103,6 +114,24 @@ class ToolSettings(BaseSettings):
+     cluster_visualization_description: str = Field(
+         default=DEFAULT_TOOL_DESCRIPTIONS["cluster_visualization"],
+         validation_alias="CLUSTER_VISUALIZATION_DESCRIPTION",
++    )
++    
++    # Social Media Connector tool descriptions - Twitter
++    setup_twitter_connector_description: str = Field(
++        default=DEFAULT_TOOL_DESCRIPTIONS["setup_twitter_connector"],
++        validation_alias="SETUP_TWITTER_CONNECTOR_DESCRIPTION",
++    )
++    check_twitter_updates_description: str = Field(
++        default=DEFAULT_TOOL_DESCRIPTIONS["check_twitter_updates"],
++        validation_alias="CHECK_TWITTER_UPDATES_DESCRIPTION",
++    )
++    list_twitter_connectors_description: str = Field(
++        default=DEFAULT_TOOL_DESCRIPTIONS["list_twitter_connectors"],
++        validation_alias="LIST_TWITTER_CONNECTORS_DESCRIPTION",
++    )
++    delete_twitter_connector_description: str = Field(
++        default=DEFAULT_TOOL_DESCRIPTIONS["delete_twitter_connector"],
++        validation_alias="DELETE_TWITTER_CONNECTOR_DESCRIPTION",
++    )
++    
++    # Social Media Connector tool descriptions - Mastodon
++    setup_mastodon_connector_description: str = Field(
++        default=DEFAULT_TOOL_DESCRIPTIONS["setup_mastodon_connector"],
++        validation_alias="SETUP_MASTODON_CONNECTOR_DESCRIPTION",
++    )
++    check_mastodon_updates_description: str = Field(
++        default=DEFAULT_TOOL_DESCRIPTIONS["check_mastodon_updates"],
++        validation_alias="CHECK_MASTODON_UPDATES_DESCRIPTION",
++    )
++    list_mastodon_connectors_description: str = Field(
++        default=DEFAULT_TOOL_DESCRIPTIONS["list_mastodon_connectors"],
++        validation_alias="LIST_MASTODON_CONNECTORS_DESCRIPTION",
++    )
++    delete_mastodon_connector_description: str = Field(
++        default=DEFAULT_TOOL_DESCRIPTIONS["delete_mastodon_connector"],
++        validation_alias="DELETE_MASTODON_CONNECTOR_DESCRIPTION",
+     )
+
+--- a/src/mcp_server_qdrant/server.py
++++ b/src/mcp_server_qdrant/server.py
+@@ -47,6 +47,11 @@ from mcp_server_qdrant.tools import (
+     # Visualization tools
+     visualize_vectors,
+     cluster_visualization,
++    
++    # Social Media Connector tools
++    connectors,
++    
++    # Additional tools here...
+ )
+ 
+ logger = logging.getLogger(__name__)
+@@ -181,6 +186,33 @@ async def cluster_visualization_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
+     return await cluster_visualization(ctx, **kwargs)
+ 
+ 
++# Social Media Connector tools - Twitter
++@fast_mcp.tool(name="setup-twitter-connector", description=tool_settings.setup_twitter_connector_description)
++async def setup_twitter_connector_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
++    return await connectors.setup_twitter_connector(**kwargs)
++
++@fast_mcp.tool(name="check-twitter-updates", description=tool_settings.check_twitter_updates_description)
++async def check_twitter_updates_tool(ctx: Context, connector_id: str) -> Dict[str, Any]:
++    return await connectors.check_twitter_updates(connector_id)
++
++@fast_mcp.tool(name="list-twitter-connectors", description=tool_settings.list_twitter_connectors_description)
++async def list_twitter_connectors_tool(ctx: Context) -> List[Dict[str, Any]]:
++    return await connectors.list_twitter_connectors()
++
++@fast_mcp.tool(name="delete-twitter-connector", description=tool_settings.delete_twitter_connector_description)
++async def delete_twitter_connector_tool(ctx: Context, connector_id: str) -> Dict[str, Any]:
++    return await connectors.delete_twitter_connector(connector_id)
++
++# Social Media Connector tools - Mastodon
++@fast_mcp.tool(name="setup-mastodon-connector", description=tool_settings.setup_mastodon_connector_description)
++async def setup_mastodon_connector_tool(ctx: Context, **kwargs) -> Dict[str, Any]:
++    return await connectors.setup_mastodon_connector(**kwargs)
++
++@fast_mcp.tool(name="check-mastodon-updates", description=tool_settings.check_mastodon_updates_description)
++async def check_mastodon_updates_tool(ctx: Context, connector_id: str) -> Dict[str, Any]:
++    return await connectors.check_mastodon_updates(connector_id)
++
++@fast_mcp.tool(name="list-mastodon-connectors", description=tool_settings.list_mastodon_connectors_description)
++async def list_mastodon_connectors_tool(ctx: Context) -> List[Dict[str, Any]]:
++    return await connectors.list_mastodon_connectors()
++
++@fast_mcp.tool(name="delete-mastodon-connector", description=tool_settings.delete_mastodon_connector_description)
++async def delete_mastodon_connector_tool(ctx: Context, connector_id: str) -> Dict[str, Any]:
++    return await connectors.delete_mastodon_connector(connector_id)
++
++
+ @click.command()
+ @click.option(
+     "--qdrant-url",
